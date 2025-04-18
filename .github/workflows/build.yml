@@ -1,56 +1,78 @@
-name: Build and Release
+name: Build, Version und Release
 
 on:
   push:
     branches: [ main ]
-    tags:
-      - 'v*'
   pull_request:
     branches: [ main ]
 
 permissions:
-  contents: write  # Wichtig: Gibt die Berechtigung zum Erstellen von Releases
+  contents: write
 
 jobs:
-  build:
+  get-version:
+    name: Determine Version
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.get_next_version.outputs.version }}
+      has-next-version: ${{ steps.get_next_version.outputs.hasNextVersion }}
+
+    steps:
+    - name: Repository auschecken
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+
+    - name: Nächste Version ermitteln
+      uses: thenativeweb/get-next-version@main
+      id: get_next_version
+
+  build-and-release:
+    name: Build und Release
+    needs: get-version
+    if: ${{ needs.get-version.outputs.has-next-version == 'true' }}
     runs-on: windows-latest
 
     steps:
-    - uses: actions/checkout@v4
+    - name: Repository auschecken
+      uses: actions/checkout@v4
 
-    - name: Setup .NET
+    - name: .NET einrichten
       uses: actions/setup-dotnet@v4
       with:
         dotnet-version: 9.0.x
 
-    - name: Restore dependencies
+    - name: Abhängigkeiten wiederherstellen
       run: dotnet restore
 
-    - name: Build
-      run: dotnet publish -r win-x64 -c Release --self-contained true -p:PublishSingleFile=true -p:EnableCompressionInSingleFile=true
+    - name: Anwendung bauen
+      run: |
+        $VERSION="${{ needs.get-version.outputs.version }}"
+        echo "Baue Version v$VERSION.${{ github.run_number }}"
+        dotnet publish -r win-x64 -c Release --self-contained true -p:PublishSingleFile=true -p:EnableCompressionInSingleFile=true -p:AssemblyVersion=$VERSION.${{ github.run_number }} -p:FileVersion=$VERSION.${{ github.run_number }} -p:Version=$VERSION.${{ github.run_number }}
+      shell: pwsh
 
-    - name: Upload artifact
+    - name: Tag erstellen
+      run: |
+        $VERSION="v${{ needs.get-version.outputs.version }}"
+        git config --global user.name 'GitHub Actions'
+        git config --global user.email 'actions@github.com'
+        git tag $VERSION
+        git push origin $VERSION
+      shell: pwsh
+
+    - name: Artefakt hochladen
       uses: actions/upload-artifact@v4
       with:
-        name: DesktopUhr
-        path: bin/Release/net9.0-windows/win-x64/publish/DesktopUhr.exe
+        name: DesktopClock
+        path: bin/Release/net9.0-windows/win-x64/publish/DesktopClock.exe
 
-  release:
-    needs: build
-    if: startsWith(github.ref, 'refs/tags/')
-    runs-on: windows-latest
-
-    steps:
-    - name: Download artifact
-      uses: actions/download-artifact@v4
-      with:
-        name: DesktopUhr
-
-    - name: Create Release
+    - name: Release erstellen
       uses: softprops/action-gh-release@v1
       with:
-        files: DesktopUhr.exe
-        name: Release ${{ github.ref_name }}
+        files: bin/Release/net9.0-windows/win-x64/publish/DesktopClock.exe
+        name: Release v${{ needs.get-version.outputs.version }}
+        tag_name: v${{ needs.get-version.outputs.version }}
         draft: false
         prerelease: false
         generate_release_notes: true

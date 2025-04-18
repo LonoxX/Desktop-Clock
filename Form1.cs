@@ -6,6 +6,10 @@ using System.Configuration;
 using System.IO;
 using Microsoft.Win32;
 using System.Reflection;
+using System.Net.Http;
+using System.Text.Json;
+using System.Threading.Tasks;
+using System.Diagnostics;
 
 namespace DesktopUhr
 {
@@ -18,6 +22,11 @@ namespace DesktopUhr
         private Point lastMousePosition;
         private NotifyIcon trayIcon;
         private Icon appIcon;
+
+        // Aktuelle Version der App
+        private readonly Version currentVersion = Assembly.GetExecutingAssembly().GetName().Version;
+        private string currentVersionDisplay => currentVersion.ToString(currentVersion.Build == 0 ? 3 : 4);
+        private const string GITHUB_REPO = "LonoxX/Desktop-Clock";
 
         public Form1()
         {
@@ -80,7 +89,11 @@ namespace DesktopUhr
 
         private void UpdateTime()
         {
-            timeLabel.Text = DateTime.Now.ToString("dd.MM.yyyy\nHH:mm:ss");
+            DateTime localTime = DateTime.Now;
+            string dateFormat = System.Globalization.CultureInfo.CurrentCulture.DateTimeFormat.ShortDatePattern;
+            string timeFormat = System.Globalization.CultureInfo.CurrentCulture.DateTimeFormat.LongTimePattern;
+
+            timeLabel.Text = localTime.ToString(dateFormat + "\n" + timeFormat);
             this.Size = timeLabel.PreferredSize + new Size(20, 20);
         }
 
@@ -188,12 +201,18 @@ namespace DesktopUhr
 
             var exitItem = new ToolStripMenuItem("Exit");
             exitItem.Click += (s, e) => Application.Exit();
+            var checkUpdateItem = new ToolStripMenuItem("Check for Updates");
+            checkUpdateItem.Click += async (s, e) =>
+            {
+                await Task.Run(() => CheckForUpdatesAsync(showNoUpdateMessage: true));
+            };
 
             menu.Items.Add(moveItem);
             menu.Items.Add(colorItem);
             menu.Items.Add(fontSizeItem);
             menu.Items.Add(savePositionItem);
             menu.Items.Add(autostartItem);
+            menu.Items.Add(checkUpdateItem);
             menu.Items.Add(new ToolStripSeparator());
             menu.Items.Add(exitItem);
 
@@ -374,6 +393,96 @@ namespace DesktopUhr
             base.OnLocationChanged(e);
 
             SavePosition();
+        }
+
+        // Prüft auf Updates beim Start der App
+        protected override void OnLoad(EventArgs e)
+        {
+            base.OnLoad(e);
+            Task.Run(() => CheckForUpdatesAsync(showNoUpdateMessage: false));
+        }
+
+        // Prüft auf Updates von GitHub
+        private async Task CheckForUpdatesAsync(bool showNoUpdateMessage = true)
+        {
+            try
+            {
+                var latestVersion = await GetLatestReleaseVersionAsync();
+                if (latestVersion != null && latestVersion > currentVersion)
+                {
+                    // Auf UI-Thread wechseln für Benachrichtigung
+                    this.Invoke((System.Windows.Forms.MethodInvoker)(() =>
+                    {
+                        ShowUpdateNotification(latestVersion);
+                    }));
+                }
+                else if (showNoUpdateMessage)
+                {
+                    this.Invoke((System.Windows.Forms.MethodInvoker)(() =>
+                    {
+                        MessageBox.Show($"Sie haben bereits die neueste Version ({currentVersion}).",
+                            "Keine Updates verfügbar", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    }));
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Fehler beim Prüfen auf Updates: {ex.Message}");
+                if (showNoUpdateMessage)
+                {
+                    this.Invoke((System.Windows.Forms.MethodInvoker)(() =>
+                    {
+                        MessageBox.Show($"Fehler beim Prüfen auf Updates: {ex.Message}",
+                            "Fehler", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    }));
+                }
+            }
+        }
+
+        // Ruft die neueste Version von GitHub ab
+        private async Task<Version> GetLatestReleaseVersionAsync()
+        {
+            using (HttpClient client = new HttpClient())
+            {
+                // GitHub API benötigt einen User-Agent Header
+                client.DefaultRequestHeaders.Add("User-Agent", "Desktop-Clock-Update-Checker");
+
+                string url = $"https://api.github.com/repos/{GITHUB_REPO}/releases/latest";
+                var response = await client.GetStringAsync(url);
+
+                using (JsonDocument doc = JsonDocument.Parse(response))
+                {
+                    string tagName = doc.RootElement.GetProperty("tag_name").GetString();
+
+                    // "v1.0.0" zu "1.0.0" konvertieren
+                    if (tagName.StartsWith("v"))
+                    {
+                        tagName = tagName.Substring(1);
+                    }
+
+                    return new Version(tagName);
+                }
+            }
+        }
+
+        // Zeigt eine Update-Benachrichtigung an
+        private void ShowUpdateNotification(Version newVersion)
+        {
+            var result = MessageBox.Show(
+                $"Eine neue Version ({newVersion}) ist verfügbar. Ihre aktuelle Version ist {currentVersionDisplay}.\n\n" +
+                "Möchten Sie die neue Version herunterladen?",
+                "Update verfügbar",
+                MessageBoxButtons.YesNo,
+                MessageBoxIcon.Information);
+
+            if (result == DialogResult.Yes)
+            {
+                Process.Start(new ProcessStartInfo
+                {
+                    FileName = $"https://github.com/{GITHUB_REPO}/releases/latest",
+                    UseShellExecute = true
+                });
+            }
         }
     }
 }
