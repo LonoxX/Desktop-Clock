@@ -17,30 +17,4 @@
   <ItemGroup>
     <PackageReference Include="System.Configuration.ConfigurationManager" Version="9.0.4" />
   </ItemGroup>
-  <ItemGroup>
-    <Content Include="Resources\**">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
-  </ItemGroup>
-  <ItemGroup>
-    <None Remove="Resources\clock.ico" />
-    <EmbeddedResource Include="Resources\clock.ico" />
-  </ItemGroup>
-  <!-- Automatic build number increment -->
-  <Target Name="IncrementBuildNumber" BeforeTargets="BeforeBuild">
-    <ReadLinesFromFile File="$(BuildNumberFile)" Condition="Exists('$(BuildNumberFile)')">
-      <Output TaskParameter="Lines" PropertyName="BuildNumber" />
-    </ReadLinesFromFile>
-    <PropertyGroup Condition="!Exists('$(BuildNumberFile)')">
-      <BuildNumber>1</BuildNumber>
-    </PropertyGroup>
-    <PropertyGroup>
-      <NewBuildNumber>$([MSBuild]::Add($(BuildNumber), 1))</NewBuildNumber>
-      <AssemblyVersion>1.1.2.$(NewBuildNumber)</AssemblyVersion>
-      <FileVersion>1.1.2.$(NewBuildNumber)</FileVersion>
-      <InformationalVersion>1.1.2.$(NewBuildNumber)</InformationalVersion>
-    </PropertyGroup>
-    <WriteLinesToFile File="$(BuildNumberFile)" Lines="$(NewBuildNumber)" Overwrite="true" />
-    <Message Text="Build number increased to: $(NewBuildNumber)" Importance="high" />
-  </Target>
 </Project>

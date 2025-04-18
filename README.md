@@ -54,5 +54,5 @@ The application launches immediately and saves your settings automatically.
 ---
 
 # Support
-> Webseite: [Panda-Network.de](https://panda-network.de)
+> Webseite: [Panda-Network.de](https://panda-network.de) \
 > Support [Discord-Server](https://discord.gg/z8ScRvf)
