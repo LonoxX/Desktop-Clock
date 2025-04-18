@@ -1,5 +1,6 @@
 # 🕒 DesktopClock
 ![alt text](<docs/screenshot.png>)
+
 **A sleek and minimalist clock for your Windows desktop.**
 
 ---
