@@ -50,12 +50,38 @@ jobs:
         # Load XML file
         $xml = [xml](Get-Content $CSPROJ_FILE)
 
-        # Update version information
-        $propertyGroup = $xml.Project.PropertyGroup[0]
-        $propertyGroup.VersionPrefix = $VERSION
-        $propertyGroup.AssemblyVersion = "$VERSION.0"
-        $propertyGroup.FileVersion = "$VERSION.0"
-        $propertyGroup.InformationalVersion = $VERSION
+        # Update version information - use SelectSingleNode to ensure we find the correct elements
+        $nsManager = New-Object System.Xml.XmlNamespaceManager($xml.NameTable)
+        $propertyGroup = $xml.SelectNodes("//PropertyGroup")[0]
+
+        # Update each version property individually
+        $versionPrefix = $propertyGroup.SelectSingleNode("VersionPrefix")
+        if ($versionPrefix) { $versionPrefix.InnerText = $VERSION }
+
+        $assemblyVersion = $propertyGroup.SelectSingleNode("AssemblyVersion")
+        if ($assemblyVersion) { $assemblyVersion.InnerText = "$VERSION.0" }
+
+        $fileVersion = $propertyGroup.SelectSingleNode("FileVersion")
+        if ($fileVersion) { $fileVersion.InnerText = "$VERSION.0" }
+
+        $informationalVersion = $propertyGroup.SelectSingleNode("InformationalVersion")
+        if ($informationalVersion) { $informationalVersion.InnerText = $VERSION }
+
+        # Update the IncrementBuildNumber target's version numbers
+        $incrementBuildNumberTarget = $xml.SelectSingleNode("//Target[@Name='IncrementBuildNumber']")
+        if ($incrementBuildNumberTarget) {
+          $incrementPropertyGroup = $incrementBuildNumberTarget.SelectSingleNode(".//PropertyGroup[last()]")
+          if ($incrementPropertyGroup) {
+            $incrementAssemblyVersion = $incrementPropertyGroup.SelectSingleNode("AssemblyVersion")
+            if ($incrementAssemblyVersion) { $incrementAssemblyVersion.InnerText = "$VERSION.`$(NewBuildNumber)" }
+
+            $incrementFileVersion = $incrementPropertyGroup.SelectSingleNode("FileVersion")
+            if ($incrementFileVersion) { $incrementFileVersion.InnerText = "$VERSION.`$(NewBuildNumber)" }
+
+            $incrementInformationalVersion = $incrementPropertyGroup.SelectSingleNode("InformationalVersion")
+            if ($incrementInformationalVersion) { $incrementInformationalVersion.InnerText = "$VERSION.`$(NewBuildNumber)" }
+          }
+        }
 
         # Save changes
         $xml.Save($CSPROJ_FILE)

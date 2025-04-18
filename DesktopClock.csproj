@@ -1,5 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
-
+<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <OutputType>WinExe</OutputType>
     <TargetFramework>net9.0-windows</TargetFramework>
@@ -7,51 +6,41 @@
     <UseWindowsForms>true</UseWindowsForms>
     <ImplicitUsings>enable</ImplicitUsings>
     <!-- Version settings -->
-    <VersionPrefix>1.0.0</VersionPrefix>
-    <VersionSuffix></VersionSuffix>
-    <AssemblyVersion>1.0.0.0</AssemblyVersion>
-    <FileVersion>1.0.0.0</FileVersion>
-    <InformationalVersion>1.0.0</InformationalVersion>
+    <VersionPrefix>1.0.5</VersionPrefix>
+    <VersionSuffix>
+    </VersionSuffix>
+    <AssemblyVersion>1.0.5.0</AssemblyVersion>
+    <FileVersion>1.0.5.0</FileVersion>
+    <InformationalVersion>1.0.5</InformationalVersion>
     <BuildNumberFile>$(MSBuildProjectDirectory)\buildnumber.txt</BuildNumberFile>
   </PropertyGroup>
-
   <ItemGroup>
     <PackageReference Include="System.Configuration.ConfigurationManager" Version="9.0.4" />
   </ItemGroup>
-
   <ItemGroup>
     <Content Include="Resources\**">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
   </ItemGroup>
-
   <ItemGroup>
     <None Remove="Resources\clock.ico" />
     <EmbeddedResource Include="Resources\clock.ico" />
   </ItemGroup>
-
   <!-- Automatic build number increment -->
   <Target Name="IncrementBuildNumber" BeforeTargets="BeforeBuild">
     <ReadLinesFromFile File="$(BuildNumberFile)" Condition="Exists('$(BuildNumberFile)')">
       <Output TaskParameter="Lines" PropertyName="BuildNumber" />
     </ReadLinesFromFile>
-
     <PropertyGroup Condition="!Exists('$(BuildNumberFile)')">
       <BuildNumber>1</BuildNumber>
     </PropertyGroup>
-
     <PropertyGroup>
       <NewBuildNumber>$([MSBuild]::Add($(BuildNumber), 1))</NewBuildNumber>
-      <AssemblyVersion>1.0.0.$(NewBuildNumber)</AssemblyVersion>
-      <FileVersion>1.0.0.$(NewBuildNumber)</FileVersion>
-      <InformationalVersion>1.0.0.$(NewBuildNumber)</InformationalVersion>
+      <AssemblyVersion>1.0.5.$(NewBuildNumber)</AssemblyVersion>
+      <FileVersion>1.0.5.$(NewBuildNumber)</FileVersion>
+      <InformationalVersion>1.0.5.$(NewBuildNumber)</InformationalVersion>
     </PropertyGroup>
-
-    <WriteLinesToFile File="$(BuildNumberFile)"
-                      Lines="$(NewBuildNumber)"
-                      Overwrite="true" />
-
+    <WriteLinesToFile File="$(BuildNumberFile)" Lines="$(NewBuildNumber)" Overwrite="true" />
     <Message Text="Build number increased to: $(NewBuildNumber)" Importance="high" />
   </Target>
-
 </Project>
