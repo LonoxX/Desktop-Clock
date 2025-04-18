@@ -1,4 +1,4 @@
-name: Build, Version und Release
+name: Build, Version and Release
 
 on:
   push:
@@ -18,56 +18,80 @@ jobs:
       has-next-version: ${{ steps.get_next_version.outputs.hasNextVersion }}
 
     steps:
-    - name: Repository auschecken
+    - name: Checkout repository
       uses: actions/checkout@v4
       with:
         fetch-depth: 0
 
-    - name: Nächste Version ermitteln
+    - name: Determine next version
       uses: thenativeweb/get-next-version@main
       id: get_next_version
 
   build-and-release:
-    name: Build und Release
+    name: Build and Release
     needs: get-version
     if: ${{ needs.get-version.outputs.has-next-version == 'true' }}
     runs-on: windows-latest
 
     steps:
-    - name: Repository auschecken
+    - name: Checkout repository
       uses: actions/checkout@v4
 
-    - name: .NET einrichten
+    - name: Setup .NET
       uses: actions/setup-dotnet@v4
       with:
         dotnet-version: 9.0.x
 
-    - name: Abhängigkeiten wiederherstellen
-      run: dotnet restore
-
-    - name: Anwendung bauen
+    - name: Update version in csproj
       run: |
         $VERSION="${{ needs.get-version.outputs.version }}"
-        echo "Baue Version v$VERSION.${{ github.run_number }}"
+        $CSPROJ_FILE="DesktopClock.csproj"
+
+        # Load XML file
+        $xml = [xml](Get-Content $CSPROJ_FILE)
+
+        # Update version information
+        $propertyGroup = $xml.Project.PropertyGroup[0]
+        $propertyGroup.VersionPrefix = $VERSION
+        $propertyGroup.AssemblyVersion = "$VERSION.0"
+        $propertyGroup.FileVersion = "$VERSION.0"
+        $propertyGroup.InformationalVersion = $VERSION
+
+        # Save changes
+        $xml.Save($CSPROJ_FILE)
+
+        echo "Version in csproj updated to $VERSION"
+      shell: pwsh
+
+    - name: Restore dependencies
+      run: dotnet restore
+
+    - name: Build application
+      run: |
+        $VERSION="${{ needs.get-version.outputs.version }}"
+        echo "Building version v$VERSION.${{ github.run_number }}"
         dotnet publish -r win-x64 -c Release --self-contained true -p:PublishSingleFile=true -p:EnableCompressionInSingleFile=true -p:AssemblyVersion=$VERSION.${{ github.run_number }} -p:FileVersion=$VERSION.${{ github.run_number }} -p:Version=$VERSION.${{ github.run_number }}
       shell: pwsh
 
-    - name: Tag erstellen
+    - name: Commit and push changes
       run: |
         $VERSION="v${{ needs.get-version.outputs.version }}"
         git config --global user.name 'GitHub Actions'
         git config --global user.email 'actions@github.com'
+        git add DesktopClock.csproj
+        git commit -m "Update Version to $VERSION [skip ci]"
+        git push origin main
         git tag $VERSION
         git push origin $VERSION
       shell: pwsh
 
-    - name: Artefakt hochladen
+    - name: Upload artifact
       uses: actions/upload-artifact@v4
       with:
         name: DesktopClock
         path: bin/Release/net9.0-windows/win-x64/publish/DesktopClock.exe
 
-    - name: Release erstellen
+    - name: Create release
       uses: softprops/action-gh-release@v1
       with:
         files: bin/Release/net9.0-windows/win-x64/publish/DesktopClock.exe

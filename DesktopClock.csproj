@@ -30,7 +30,7 @@
     <EmbeddedResource Include="Resources\clock.ico" />
   </ItemGroup>
 
-  <!-- Automatisches Erhöhen der Build-Nummer -->
+  <!-- Automatic build number increment -->
   <Target Name="IncrementBuildNumber" BeforeTargets="BeforeBuild">
     <ReadLinesFromFile File="$(BuildNumberFile)" Condition="Exists('$(BuildNumberFile)')">
       <Output TaskParameter="Lines" PropertyName="BuildNumber" />
@@ -51,7 +51,7 @@
                       Lines="$(NewBuildNumber)"
                       Overwrite="true" />
 
-    <Message Text="Build Nummer erhöht auf: $(NewBuildNumber)" Importance="high" />
+    <Message Text="Build number increased to: $(NewBuildNumber)" Importance="high" />
   </Target>
 
 </Project>

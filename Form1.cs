@@ -23,7 +23,7 @@ namespace DesktopClock
         private NotifyIcon trayIcon;
         private Icon appIcon;
 
-        // Aktuelle Version der App
+        // Current version of the app
         private readonly Version currentVersion = Assembly.GetExecutingAssembly().GetName().Version;
         private string currentVersionDisplay => currentVersion.ToString(currentVersion.Build == 0 ? 3 : 4);
         private const string GITHUB_REPO = "LonoxX/Desktop-Clock";
@@ -395,14 +395,14 @@ namespace DesktopClock
             SavePosition();
         }
 
-        // Prüft auf Updates beim Start der App
+        // Checks for updates when the app starts
         protected override void OnLoad(EventArgs e)
         {
             base.OnLoad(e);
             Task.Run(() => CheckForUpdatesAsync(showNoUpdateMessage: false));
         }
 
-        // Prüft auf Updates von GitHub
+        // Checks for updates from GitHub
         private async Task CheckForUpdatesAsync(bool showNoUpdateMessage = true)
         {
             try
@@ -410,7 +410,7 @@ namespace DesktopClock
                 var latestVersion = await GetLatestReleaseVersionAsync();
                 if (latestVersion != null && latestVersion > currentVersion)
                 {
-                    // Auf UI-Thread wechseln für Benachrichtigung
+                    // Switch to UI thread for notification
                     this.Invoke((System.Windows.Forms.MethodInvoker)(() =>
                     {
                         ShowUpdateNotification(latestVersion);
@@ -420,31 +420,31 @@ namespace DesktopClock
                 {
                     this.Invoke((System.Windows.Forms.MethodInvoker)(() =>
                     {
-                        MessageBox.Show($"Sie haben bereits die neueste Version ({currentVersion}).",
-                            "Keine Updates verfügbar", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                        MessageBox.Show($"You already have the latest version ({currentVersion}).",
+                            "No updates available", MessageBoxButtons.OK, MessageBoxIcon.Information);
                     }));
                 }
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Fehler beim Prüfen auf Updates: {ex.Message}");
+                Console.WriteLine($"Error checking for updates: {ex.Message}");
                 if (showNoUpdateMessage)
                 {
                     this.Invoke((System.Windows.Forms.MethodInvoker)(() =>
                     {
-                        MessageBox.Show($"Fehler beim Prüfen auf Updates: {ex.Message}",
-                            "Fehler", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                        MessageBox.Show($"Error checking for updates: {ex.Message}",
+                            "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
                     }));
                 }
             }
         }
 
-        // Ruft die neueste Version von GitHub ab
+        // Gets the latest version from GitHub
         private async Task<Version> GetLatestReleaseVersionAsync()
         {
             using (HttpClient client = new HttpClient())
             {
-                // GitHub API benötigt einen User-Agent Header
+                // GitHub API requires a User-Agent header
                 client.DefaultRequestHeaders.Add("User-Agent", "Desktop-Clock-Update-Checker");
 
                 string url = $"https://api.github.com/repos/{GITHUB_REPO}/releases/latest";
@@ -454,7 +454,7 @@ namespace DesktopClock
                 {
                     string tagName = doc.RootElement.GetProperty("tag_name").GetString();
 
-                    // "v1.0.0" zu "1.0.0" konvertieren
+                    // Convert "v1.0.0" to "1.0.0"
                     if (tagName.StartsWith("v"))
                     {
                         tagName = tagName.Substring(1);
@@ -465,13 +465,13 @@ namespace DesktopClock
             }
         }
 
-        // Zeigt eine Update-Benachrichtigung an
+        // Shows an update notification
         private void ShowUpdateNotification(Version newVersion)
         {
             var result = MessageBox.Show(
-                $"Eine neue Version ({newVersion}) ist verfügbar. Ihre aktuelle Version ist {currentVersionDisplay}.\n\n" +
-                "Möchten Sie die neue Version herunterladen?",
-                "Update verfügbar",
+                $"A new version ({newVersion}) is available. Your current version is {currentVersionDisplay}.\n\n" +
+                "Do you want to download the new version?",
+                "Update available",
                 MessageBoxButtons.YesNo,
                 MessageBoxIcon.Information);
 
