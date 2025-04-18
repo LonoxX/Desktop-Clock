@@ -1,4 +1,4 @@
-namespace DesktopUhr
+namespace DesktopClock
 {
     static class Program
     {

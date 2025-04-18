@@ -1,4 +1,4 @@
-﻿namespace DesktopUhr
+﻿namespace DesktopClock
 {
     partial class Form1
     {

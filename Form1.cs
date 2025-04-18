@@ -11,7 +11,7 @@ using System.Text.Json;
 using System.Threading.Tasks;
 using System.Diagnostics;
 
-namespace DesktopUhr
+namespace DesktopClock
 {
     public partial class Form1 : Form
     {
@@ -328,7 +328,7 @@ namespace DesktopUhr
             {
                 using (RegistryKey key = Registry.CurrentUser.OpenSubKey("SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Run", false))
                 {
-                    return key?.GetValue("DesktopUhr") != null;
+                    return key?.GetValue("DesktopClock") != null;
                 }
             }
             catch (Exception ex)
@@ -350,7 +350,7 @@ namespace DesktopUhr
                 }
                 else
                 {
-                    exePath = Path.Combine(AppContext.BaseDirectory, "DesktopUhr.exe");
+                    exePath = Path.Combine(AppContext.BaseDirectory, "DesktopClock.exe");
                 }
 
                 using (RegistryKey key = Registry.CurrentUser.OpenSubKey("SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Run", true))
@@ -359,11 +359,11 @@ namespace DesktopUhr
                     {
                         if (enable)
                         {
-                            key.SetValue("DesktopUhr", $"\"{exePath}\"");
+                            key.SetValue("DesktopClock", $"\"{exePath}\"");
                         }
                         else
                         {
-                            key.DeleteValue("DesktopUhr", false);
+                            key.DeleteValue("DesktopClock", false);
                         }
                     }
                 }
