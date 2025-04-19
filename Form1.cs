@@ -604,7 +604,7 @@ namespace DesktopClock
                 Rectangle workingArea = Screen.PrimaryScreen.WorkingArea;
                 int x = workingArea.Left + (workingArea.Width - this.Width) / 2;
                 int y = workingArea.Top + (workingArea.Height - this.Height) / 2;
-                this.Location = new Point(Math.max(workingArea.Left, x), Math.max(workingArea.Top, y));
+                this.Location = new Point(Math.Max(workingArea.Left, x), Math.Max(workingArea.Top, y));
             }
             else
             {
